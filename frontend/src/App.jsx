@@ -51,71 +51,79 @@ function App() {
     <Router>
       <Routes>
         {/* Public Routes - Redirect to dashboard if authenticated */}
-        <Route 
-          path="/" 
+        <Route
+          path="/"
           element={
             <PublicRoute>
               <LandingPage />
             </PublicRoute>
-          } 
+          }
         />
-        <Route 
-          path="/login" 
+        <Route
+          path="/login"
           element={
             <PublicRoute>
               <Login />
             </PublicRoute>
-          } 
+          }
         />
-        <Route 
-          path="/signup" 
+        <Route
+          path="/signup"
           element={
             <PublicRoute>
               <Signup />
             </PublicRoute>
-          } 
+          }
         />
 
         {/* Protected Routes - Require authentication */}
-        <Route 
-          path="/dashboard" 
+        <Route
+          path="/dashboard"
           element={
             <ProtectedRoute>
               <Dashboard />
             </ProtectedRoute>
-          } 
+          }
         />
-        <Route 
-          path="/teachers" 
+        <Route
+          path="/teachers"
           element={
             <ProtectedRoute>
               <TeacherPage />
             </ProtectedRoute>
-          } 
+          }
         />
-        <Route 
-          path="/rooms" 
+        <Route
+          path="/rooms"
           element={
             <ProtectedRoute>
               <RoomPage />
             </ProtectedRoute>
-          } 
+          }
         />
-        <Route 
-          path="/subjects" 
+        <Route
+          path="/subjects"
           element={
             <ProtectedRoute>
               <SubjectPage />
             </ProtectedRoute>
-          } 
+          }
+        />
+        <Route
+          path="/timetable"
+          element={
+            <ProtectedRoute>
+              <Timetable />
+            </ProtectedRoute>
+          }
         />
 
         {/* Fallback Route */}
-        <Route 
-          path="*" 
+        <Route
+          path="*"
           element={
             isAuthenticated ? <Navigate to="/dashboard" replace /> : <Navigate to="/" replace />
-          } 
+          }
         />
       </Routes>
     </Router>
