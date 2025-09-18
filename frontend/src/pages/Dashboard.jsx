@@ -19,8 +19,10 @@ import {
 import { useNavigate } from "react-router-dom";
 
 const Dashboard = () => {
+
   const [loading, setLoading] = useState(true);
   let navigate=useNavigate();
+  if(!localStorage.getItem("sihtoken")) {navigate("/landing")}
   const [stats, setStats] = useState({
     teachers: 4,
     subjects: 6,
