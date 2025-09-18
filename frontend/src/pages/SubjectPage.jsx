@@ -1,143 +1,168 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
-  Box,
-  Paper,
-  Typography,
   Button,
-  IconButton,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  TextField,
+  Snackbar,
+  Alert,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  MenuItem
+  Paper,
+  IconButton,
 } from "@mui/material";
-import { Add, Edit, Delete } from "@mui/icons-material";
+import { Edit, Delete } from "@mui/icons-material";
+import axios from "axios";
 
-const SubjectPage = () => {
-  const [subjects, setSubjects] = useState([
-    {
-      code: "MTH101",
-      name: "Mathematics",
-      dept: "Science",
-      sem: 1,
-      type: "Core",
-      hrsPerWeek: 4,
-      lab: "No"
-    },
-    {
-      code: "PHY102",
-      name: "Physics",
-      dept: "Science",
-      sem: 2,
-      type: "Core",
-      hrsPerWeek: 3,
-      lab: "Yes"
-    },
-    {
-      code: "CSE103",
-      name: "Computer Science",
-      dept: "Engineering",
-      sem: 3,
-      type: "Elective",
-      hrsPerWeek: 5,
-      lab: "Yes"
-    }
-  ]);
+const API_URL = "http://localhost:9090"; // adjust if different
 
+export default function SubjectPage() {
+  const [subjects, setSubjects] = useState([]);
   const [open, setOpen] = useState(false);
+  const [editIndex, setEditIndex] = useState(null);
+  const [snackbar, setSnackbar] = useState({ open: false, message: "", type: "success" });
   const [newSubject, setNewSubject] = useState({
     code: "",
     name: "",
-    dept: "",
-    sem: "",
-    type: "",
-    hrsPerWeek: "",
-    lab: ""
+    department: "",
+    year: "",
+    semester: "",
   });
-  const [editIndex, setEditIndex] = useState(null);
 
-  const handleAdd = () => {
-    if (editIndex !== null) {
-      const updated = [...subjects];
-      updated[editIndex] = newSubject;
-      setSubjects(updated);
-      setEditIndex(null);
-    } else {
-      setSubjects([...subjects, newSubject]);
+  const token = localStorage.getItem("sihtoken");
+
+  // Fetch subjects
+  const fetchSubjects = async () => {
+    try {
+      const res = await axios.get(`${API_URL}/subject`, {
+        headers: { sihtoken: token },
+      });
+      setSubjects(res.data.subjects || []);
+    } catch (err) {
+      console.error(err);
+      setSnackbar({
+        open: true,
+        message: err.response?.data?.message || "Failed to fetch subjects",
+        type: "error",
+      });
     }
-    setNewSubject({
-      code: "",
-      name: "",
-      dept: "",
-      sem: "",
-      type: "",
-      hrsPerWeek: "",
-      lab: ""
-    });
-    setOpen(false);
   };
 
-  const handleEdit = (index) => {
-    setNewSubject(subjects[index]);
-    setEditIndex(index);
+  useEffect(() => {
+    fetchSubjects();
+  }, []);
+
+  // Open dialog for add/edit
+  const handleClickOpen = (subject = null, index = null) => {
+    if (subject) {
+      setNewSubject(subject);
+      setEditIndex(index);
+    } else {
+      setNewSubject({ code: "", name: "", department: "", year: "", semester: "" });
+      setEditIndex(null);
+    }
     setOpen(true);
   };
 
-  const handleDelete = (index) => {
-    const updated = [...subjects];
-    updated.splice(index, 1);
-    setSubjects(updated);
+  const handleClose = () => setOpen(false);
+
+  // Save subject (add/update)
+  const handleSave = async () => {
+    try {
+      const payload = {
+        code: newSubject.code,
+        name: newSubject.name,
+        department: newSubject.department,
+        year: Number(newSubject.year),
+        semester: Number(newSubject.semester),
+      };
+
+      if (editIndex !== null) {
+        const id = subjects[editIndex]._id;
+        const res = await axios.put(`${API_URL}/subject/${id}`, payload, {
+          headers: { sihtoken: token },
+        });
+        const updated = [...subjects];
+        updated[editIndex] = res.data.subject;
+        setSubjects(updated);
+        setSnackbar({ open: true, message: "Subject updated", type: "success" });
+      } else {
+        const res = await axios.post(`${API_URL}/subject`, payload, {
+          headers: { sihtoken: token },
+        });
+        setSubjects([...subjects, res.data.subject]);
+        setSnackbar({ open: true, message: "Subject added", type: "success" });
+      }
+    } catch (err) {
+      console.error(err);
+      setSnackbar({
+        open: true,
+        message: err.response?.data?.message || "Action failed",
+        type: "error",
+      });
+    } finally {
+      handleClose();
+    }
+  };
+
+  // Delete subject
+  const handleDelete = async (id, index) => {
+    try {
+      await axios.delete(`${API_URL}/subject/${id}`, {
+        headers: { sihtoken: token },
+      });
+      const updated = [...subjects];
+      updated.splice(index, 1);
+      setSubjects(updated);
+      setSnackbar({ open: true, message: "Subject deleted", type: "success" });
+    } catch (err) {
+      console.error(err);
+      setSnackbar({
+        open: true,
+        message: err.response?.data?.message || "Delete failed",
+        type: "error",
+      });
+    }
   };
 
   return (
-    <Box p={3}>
-      <Typography variant="h4" gutterBottom>
-        Manage Subjects
-      </Typography>
-      <Button
-        variant="contained"
-        startIcon={<Add />}
-        onClick={() => setOpen(true)}
-      >
+    <div style={{ padding: "20px" }}>
+      <Button variant="contained" color="primary" onClick={() => handleClickOpen()}>
         Add Subject
       </Button>
 
-      <TableContainer component={Paper} sx={{ mt: 3 }}>
+      {/* Subjects Table */}
+      <TableContainer component={Paper} style={{ marginTop: "20px" }}>
         <Table>
           <TableHead>
             <TableRow>
               <TableCell>Code</TableCell>
               <TableCell>Name</TableCell>
-              <TableCell>Dept</TableCell>
-              <TableCell>Sem</TableCell>
-              <TableCell>Type</TableCell>
-              <TableCell>Hrs/Wk</TableCell>
-              <TableCell>Lab?</TableCell>
+              <TableCell>Department</TableCell>
+              <TableCell>Year</TableCell>
+              <TableCell>Semester</TableCell>
               <TableCell>Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {subjects.map((subj, index) => (
-              <TableRow key={index}>
-                <TableCell>{subj.code}</TableCell>
-                <TableCell>{subj.name}</TableCell>
-                <TableCell>{subj.dept}</TableCell>
-                <TableCell>{subj.sem}</TableCell>
-                <TableCell>{subj.type}</TableCell>
-                <TableCell>{subj.hrsPerWeek}</TableCell>
-                <TableCell>{subj.lab}</TableCell>
+            {subjects.map((subject, index) => (
+              <TableRow key={subject._id}>
+                <TableCell>{subject.code}</TableCell>
+                <TableCell>{subject.name}</TableCell>
+                <TableCell>{subject.department}</TableCell>
+                <TableCell>{subject.year}</TableCell>
+                <TableCell>{subject.semester}</TableCell>
                 <TableCell>
-                  <IconButton color="primary" onClick={() => handleEdit(index)}>
+                  <IconButton onClick={() => handleClickOpen(subject, index)}>
                     <Edit />
                   </IconButton>
-                  <IconButton color="error" onClick={() => handleDelete(index)}>
+                  <IconButton onClick={() => handleDelete(subject._id, index)}>
                     <Delete />
                   </IconButton>
                 </TableCell>
@@ -148,94 +173,63 @@ const SubjectPage = () => {
       </TableContainer>
 
       {/* Add/Edit Dialog */}
-      <Dialog open={open} onClose={() => setOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>
-          {editIndex !== null ? "Edit Subject" : "Add Subject"}
-        </DialogTitle>
+      <Dialog open={open} onClose={handleClose}>
+        <DialogTitle>{editIndex !== null ? "Edit Subject" : "Add Subject"}</DialogTitle>
         <DialogContent>
           <TextField
             label="Code"
             fullWidth
             margin="dense"
             value={newSubject.code}
-            onChange={(e) =>
-              setNewSubject({ ...newSubject, code: e.target.value })
-            }
+            onChange={(e) => setNewSubject({ ...newSubject, code: e.target.value })}
           />
           <TextField
             label="Name"
             fullWidth
             margin="dense"
             value={newSubject.name}
-            onChange={(e) =>
-              setNewSubject({ ...newSubject, name: e.target.value })
-            }
+            onChange={(e) => setNewSubject({ ...newSubject, name: e.target.value })}
           />
           <TextField
-            label="Dept"
+            label="Department"
             fullWidth
             margin="dense"
-            value={newSubject.dept}
-            onChange={(e) =>
-              setNewSubject({ ...newSubject, dept: e.target.value })
-            }
+            value={newSubject.department}
+            onChange={(e) => setNewSubject({ ...newSubject, department: e.target.value })}
           />
           <TextField
-            label="Sem"
+            label="Year"
             type="number"
             fullWidth
             margin="dense"
-            value={newSubject.sem}
-            onChange={(e) =>
-              setNewSubject({ ...newSubject, sem: e.target.value })
-            }
+            value={newSubject.year}
+            onChange={(e) => setNewSubject({ ...newSubject, year: e.target.value })}
           />
           <TextField
-            select
-            label="Type"
-            fullWidth
-            margin="dense"
-            value={newSubject.type}
-            onChange={(e) =>
-              setNewSubject({ ...newSubject, type: e.target.value })
-            }
-          >
-            <MenuItem value="Core">Core</MenuItem>
-            <MenuItem value="Elective">Elective</MenuItem>
-          </TextField>
-          <TextField
-            label="Hrs/Wk"
+            label="Semester"
             type="number"
             fullWidth
             margin="dense"
-            value={newSubject.hrsPerWeek}
-            onChange={(e) =>
-              setNewSubject({ ...newSubject, hrsPerWeek: e.target.value })
-            }
+            value={newSubject.semester}
+            onChange={(e) => setNewSubject({ ...newSubject, semester: e.target.value })}
           />
-          <TextField
-            select
-            label="Lab?"
-            fullWidth
-            margin="dense"
-            value={newSubject.lab}
-            onChange={(e) =>
-              setNewSubject({ ...newSubject, lab: e.target.value })
-            }
-          >
-            <MenuItem value="Yes">Yes</MenuItem>
-            <MenuItem value="No">No</MenuItem>
-          </TextField>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setOpen(false)}>Cancel</Button>
-          <Button onClick={handleAdd} variant="contained">
-            {editIndex !== null ? "Update" : "Add"}
+          <Button onClick={handleClose}>Cancel</Button>
+          <Button onClick={handleSave} variant="contained" color="primary">
+            {editIndex !== null ? "Update" : "Save"}
           </Button>
         </DialogActions>
       </Dialog>
-    </Box>
-  );
-};
 
-export default SubjectPage;
+      {/* Snackbar for messages */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={3000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+      >
+        <Alert severity={snackbar.type}>{snackbar.message}</Alert>
+      </Snackbar>
+    </div>
+  );
+}

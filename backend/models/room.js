@@ -2,13 +2,15 @@ import mongoose from "mongoose";
 
 const roomSchema = new mongoose.Schema(
   {
-    roomNumber: { type: String, required: true, unique: true },
-    capacity: { type: Number, required: true },
-    
-    type: { type: String, enum: ["classroom", "lab", "seminar", "auditorium"], default: "classroom" },
-    department: { type: String }, // optional (for department-specific labs)
-
-    resources: [{ type: String }], // e.g. ["Projector", "Smart Board", "AC"]
+    room: { type: String, required: true },      
+    building: { type: String, required: true }, 
+    floor: { type: Number, required: true },     
+    type: { 
+      type: String, 
+      enum: ["Lab", "Classroom", "Seminar"], 
+      required: true 
+    },
+    admin: { type: mongoose.Schema.Types.ObjectId, ref: "Admin", required: true },
   },
   { timestamps: true }
 );

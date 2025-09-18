@@ -4,19 +4,20 @@ import {
   getSubjects,
   getSubjectById,
   updateSubject,
-  deleteSubject
+  deleteSubject,
+  getCountSubject,
 } from "../controllers/subject.js";
-
+import { checkSubjectOwnership } from "../controllers/subject.js";
 import { isAuth } from "../middlewares/isAuth.js";
-
 
 const router = express.Router();
 
-// /subject
+
 router.post("/", isAuth, createSubject);
 router.get("/", isAuth, getSubjects);
-router.get("/:id", isAuth, getSubjectById);
-router.put("/:id", isAuth, updateSubject);
-router.delete("/:id", isAuth, deleteSubject);
+router.get("/count", isAuth, getCountSubject);
+router.get("/:id", isAuth, checkSubjectOwnership, getSubjectById);
+router.put("/:id", isAuth, checkSubjectOwnership, updateSubject);
+router.delete("/:id", isAuth, checkSubjectOwnership, deleteSubject);
 
 export default router;

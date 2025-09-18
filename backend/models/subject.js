@@ -6,7 +6,7 @@ const subjectSchema = new mongoose.Schema({
   department: { type: String, required: true },
   year: { type: Number, required: true },
   semester: { type: Number, required: true },
-  credits: { type: Number, required: true },
+  
 
   
   admin: {
